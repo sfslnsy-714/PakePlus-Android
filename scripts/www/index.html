@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="忆算">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#4A90D9">
+  <meta name="description" content="考验延迟记忆的算术小游戏">
+  <title>忆算 - 记忆算术挑战</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
+
+  <!-- ==================== 首页：模式选择 ==================== -->
+  <div id="page-home" class="page active">
+    <div class="page-content">
+      <div class="logo-area">
+        <div class="logo-icon">🧮</div>
+        <h1 class="app-title">忆 算</h1>
+        <p class="app-subtitle">记忆算术挑战</p>
+      </div>
+      <p class="game-intro">先记住题目 → 再回溯答题<br>考验你的延迟记忆力！</p>
+      <div class="mode-buttons">
+        <button class="btn btn-mode" data-mode="simple" onclick="selectMode('simple')">
+          <span class="mode-name">简单模式</span>
+          <span class="mode-desc">预记 3 题 · 十以内加减法</span>
+        </button>
+        <button class="btn btn-mode" data-mode="medium" onclick="selectMode('medium')">
+          <span class="mode-name">中等模式</span>
+          <span class="mode-desc">预记 6 题 · 十以内加减法</span>
+        </button>
+        <button class="btn btn-mode" data-mode="hard" onclick="selectMode('hard')">
+          <span class="mode-name">困难模式</span>
+          <span class="mode-desc">预记 9 题 · 十以内加减法</span>
+        </button>
+        <button class="btn btn-mode btn-custom-mode" data-mode="custom" onclick="showCustomSettings()">
+          <span class="mode-name">自定义模式</span>
+          <span class="mode-desc">自选题数与范围</span>
+        </button>
+      </div>
+      <button class="btn btn-leaderboard-entry" onclick="showLeaderboard()">
+        🏆 排行榜
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== 自定义设置页 ==================== -->
+  <div id="page-custom" class="page">
+    <div class="page-content">
+      <h2 class="page-title">自定义模式</h2>
+
+      <div class="setting-group">
+        <label class="setting-label">预记题目数量</label>
+        <div class="slider-row">
+          <input type="range" id="custom-count-slider" min="1" max="20" value="5"
+                 oninput="updateCustomCount(this.value)">
+          <span id="custom-count-display" class="count-display">5</span>
+        </div>
+        <p class="setting-hint">记忆阶段每题 5 秒倒计时</p>
+      </div>
+
+      <div class="setting-group">
+        <label class="setting-label">题目范围</label>
+        <div class="range-options">
+          <button class="btn btn-range selected" data-range="ten" onclick="selectRange('ten', this)">
+            十以内加减法
+          </button>
+          <button class="btn btn-range" data-range="hundred" onclick="selectRange('hundred', this)">
+            百以内加减法
+          </button>
+        </div>
+      </div>
+
+      <div class="setting-actions">
+        <button class="btn btn-start" onclick="startCustomGame()">开始游戏</button>
+        <button class="btn btn-back" onclick="showHome()">返回首页</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 游戏页 ==================== -->
+  <div id="page-game" class="page">
+    <!-- 顶部状态栏 -->
+    <div id="game-header">
+      <button id="game-quit-btn" onclick="quitGame()" title="退出游戏">✕</button>
+      <span id="game-mode-label">简单模式</span>
+      <span id="game-score">得分：<strong>0</strong></span>
+    </div>
+
+    <!-- 记忆阶段 -->
+    <div id="memorize-area" class="game-main">
+      <div class="phase-badge memory-badge">记忆阶段</div>
+      <div id="memorize-progress" class="progress-text">第 1 / 3 题</div>
+      <div id="memorize-question" class="question-display">3 + 5 = ?</div>
+      <div id="countdown-circle" class="countdown-circle">
+        <span id="countdown-number">5</span>
+      </div>
+      <p class="hint-text">请心算并记住答案</p>
+    </div>
+
+    <!-- 答题阶段 -->
+    <div id="answer-area" class="game-main hidden">
+      <div class="phase-badge answer-badge">答题阶段</div>
+      <div id="recall-hint" class="recall-hint">请回答之前记忆的题目</div>
+      <div id="old-question-display" class="old-question">3 + 5 = ?</div>
+      <div id="new-question-area" class="new-question-area">
+        <p class="new-question-label">📝 当前新题（请记住）</p>
+        <div id="new-question-display" class="question-display new-question">7 - 2 = ?</div>
+      </div>
+      <div id="answer-input-display" class="answer-display">___</div>
+      <div class="numpad" id="numpad">
+        <button class="numpad-btn" onclick="inputDigit('1')">1</button>
+        <button class="numpad-btn" onclick="inputDigit('2')">2</button>
+        <button class="numpad-btn" onclick="inputDigit('3')">3</button>
+        <button class="numpad-btn" onclick="inputDigit('4')">4</button>
+        <button class="numpad-btn" onclick="inputDigit('5')">5</button>
+        <button class="numpad-btn" onclick="inputDigit('6')">6</button>
+        <button class="numpad-btn" onclick="inputDigit('7')">7</button>
+        <button class="numpad-btn" onclick="inputDigit('8')">8</button>
+        <button class="numpad-btn" onclick="inputDigit('9')">9</button>
+        <button class="numpad-btn numpad-delete" onclick="deleteDigit()">⌫</button>
+        <button class="numpad-btn" onclick="inputDigit('0')">0</button>
+        <button class="numpad-btn numpad-confirm" onclick="submitAnswer()">确认</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 游戏结束弹窗 ==================== -->
+  <div id="modal-overlay" class="modal-overlay hidden">
+    <div id="modal-gameover" class="modal-card">
+      <div class="modal-icon" id="modal-icon">😢</div>
+      <h2 class="modal-title">游戏结束</h2>
+      <div class="modal-scores">
+        <div class="score-row">
+          <span class="score-label">本局得分</span>
+          <span class="score-value" id="result-score">0</span>
+        </div>
+        <div class="score-row">
+          <span class="score-label">最高分</span>
+          <span class="score-value high-score" id="result-highscore">0</span>
+        </div>
+      </div>
+      <div id="error-detail" class="error-detail hidden">
+        <p class="error-title">❌ 答题错误</p>
+        <p>题目：<strong id="error-question"></strong></p>
+        <p>你的答案：<span class="wrong-answer" id="error-user-answer"></span></p>
+        <p>正确答案：<span class="correct-answer" id="error-correct-answer"></span></p>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-retry" onclick="retryGame()">再来一局</button>
+        <button class="btn btn-home" onclick="showHome()">返回首页</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 排行榜页 ==================== -->
+  <div id="page-leaderboard" class="page">
+    <div class="page-content">
+      <h2 class="page-title">🏆 排行榜</h2>
+
+      <!-- 模式切换 Tab -->
+      <div class="leaderboard-tabs">
+        <button class="tab-btn active" data-tab="simple" onclick="switchLeaderboardTab('simple', this)">简单</button>
+        <button class="tab-btn" data-tab="medium" onclick="switchLeaderboardTab('medium', this)">中等</button>
+        <button class="tab-btn" data-tab="hard" onclick="switchLeaderboardTab('hard', this)">困难</button>
+        <button class="tab-btn" data-tab="custom" onclick="switchLeaderboardTab('custom', this)">自定义</button>
+      </div>
+
+      <!-- 排行榜内容 -->
+      <div id="leaderboard-content">
+        <div class="highscore-card">
+          <span class="highscore-label">🏅 最高分</span>
+          <span class="highscore-number" id="lb-highscore">0</span>
+        </div>
+        <div class="history-section">
+          <h3 class="history-title">历史记录</h3>
+          <ul id="history-list" class="history-list">
+            <li class="history-empty">暂无记录</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="leaderboard-actions">
+        <button class="btn btn-danger" id="clear-leaderboard-btn" onclick="handleClearLeaderboard()">🗑 清空数据</button>
+        <button class="btn btn-back" onclick="showHome()">← 返回首页</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast 提示 -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="game.js"></script>
+</body>
+</html>
